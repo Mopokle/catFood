@@ -11,7 +11,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
             font-size: 18px; 
             line-height: 1.5;
-            padding-bottom: 180px; 
+            padding-bottom: 180px; /* 给底部悬浮栏留位置 */
             background-color: #f3f4f6;
         }
 
@@ -63,23 +63,30 @@
             border-top-right-radius: 1.5rem;
         }
 
-        /* 加减按钮 */
+        /* 加减按钮 - 修复居中问题 */
         .stepper-btn {
             width: 3.5rem;
             height: 3.5rem;
             border-radius: 50%;
             background-color: white;
             border: 2px solid #D1D5DB;
-            font-size: 2rem;
+            /* 移除 font-size，改用 flex 居中 SVG */
             display: flex;
             align-items: center;
             justify-content: center;
             color: #4B5563;
             touch-action: manipulation; /* 防止双击缩放 */
+            padding: 0; /* 移除默认内边距 */
         }
         .stepper-btn:active {
             background-color: #E5E7EB;
             transform: scale(0.95);
+        }
+        /* SVG 图标样式 */
+        .stepper-icon {
+            width: 1.75rem;
+            height: 1.75rem;
+            stroke-width: 3;
         }
 
         /* 分区标题 */
@@ -102,6 +109,8 @@
             justify-content: center;
             margin-right: 0.5rem;
             font-size: 1rem;
+            line-height: 1; /* 修复数字垂直居中 */
+            padding-top: 2px; /* 微调数字视觉中心 */
         }
         
         /* 下拉框大字体优化 */
@@ -157,12 +166,26 @@
                 现在多重？(公斤)
             </h2>
             <div class="flex items-center justify-between px-2 py-2 bg-gray-50 rounded-xl">
-                <button class="stepper-btn" onclick="changeWeight(-0.1)">-</button>
-                <div class="text-center">
+                <!-- 减号按钮：使用 SVG 替代文本符号 -->
+                <button class="stepper-btn" onclick="changeWeight(-0.1)" aria-label="减少体重">
+                    <svg class="stepper-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
+                
+                <!-- 中间数值区域：flex-1 确保占据所有剩余空间，严格居中 -->
+                <div class="text-center flex-1">
                     <span id="weightDisplay" class="text-4xl font-black text-gray-800">2.9</span>
                     <span class="text-gray-500 font-bold">kg</span>
                 </div>
-                <button class="stepper-btn" onclick="changeWeight(0.1)">+</button>
+                
+                <!-- 加号按钮：使用 SVG 替代文本符号 -->
+                <button class="stepper-btn" onclick="changeWeight(0.1)" aria-label="增加体重">
+                    <svg class="stepper-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
             </div>
             <!-- 隐藏的实际数值 -->
             <input type="hidden" id="weight" value="2.92">
@@ -175,7 +198,7 @@
                 基础设置
             </h2>
 
-            <!-- 成长阶段 (恢复此选项) -->
+            <!-- 成长阶段 -->
             <div class="mb-4">
                 <label class="block text-gray-600 font-bold mb-2">现在的阶段？</label>
                 <select id="factor" class="big-select" onchange="calculate()">
@@ -196,12 +219,12 @@
                 </select>
             </div>
 
-            <!-- 干粮热量 (更新默认值) -->
+            <!-- 干粮热量 -->
             <div class="mb-2">
                 <label class="block text-gray-600 font-bold mb-2">吃的哪种干粮？</label>
                 <select id="dryCalorie" class="big-select" onchange="calculate()">
-                    <option value="4200" selected>🔥 烘焙粮</option>
-                    <option value="3700">🍚 膨化粮</option>
+                    <option value="4200" selected>🔥 烘焙粮/高营养 (420kcal)</option>
+                    <option value="3900">🍚 普通膨化粮 (390kcal)</option>
                     <option value="3500">🥗 减肥粮/低热量</option>
                 </select>
                 <p class="text-xs text-gray-400 mt-2 text-center">如果不确定，就保持默认“烘焙粮”</p>
