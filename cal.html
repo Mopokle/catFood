@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>伊拉专属：科学喂养计算器 v2.0</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .input-group { margin-bottom: 1rem; }
+        .input-label { display: block; font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.25rem; }
+        .input-field { width: 100%; padding: 0.5rem; border: 1px solid #D1D5DB; border-radius: 0.375rem; font-size: 1rem; color: #111827; }
+        .input-field:focus { outline: none; border-color: #3B82F6; ring: 2px; ring-color: #93C5FD; }
+        .card { background-color: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 1.5rem; margin-bottom: 1.5rem; }
+        .result-box { background-color: #EFF6FF; border: 2px solid #3B82F6; border-radius: 0.5rem; padding: 1rem; text-align: center; }
+        .highlight-num { font-size: 2rem; font-weight: 800; color: #1D4ED8; display: block; }
+        .badge { display: inline-block; padding: 0.25rem 0.5rem; font-size: 0.75rem; font-weight: 600; border-radius: 9999px; margin-left: 0.5rem; }
+        .badge-green { background-color: #D1FAE5; color: #065F46; }
+        .badge-yellow { background-color: #FEF3C7; color: #92400E; }
+        .badge-red { background-color: #FEE2E2; color: #991B1B; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-2xl mx-auto">
+        <!-- 标题区域 -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">🐱 伊拉专属喂养计算器 <span class="text-sm bg-blue-100 text-blue-800 py-1 px-2 rounded-full align-middle">Pro</span></h1>
+            <p class="text-gray-600 mt-2">精准定制：生长阶段 + BCS 体况修正</p>
+        </div>
+
+        <!-- 1. 伊拉的状态 -->
+        <div class="card border-l-4 border-blue-500">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2 flex items-center">
+                1. 伊拉现在的状态
+            </h2>
+            <div class="grid grid-cols-1 gap-4">
+                
+                <!-- 体重 -->
+                <div class="input-group">
+                    <label class="input-label">当前体重 (kg)</label>
+                    <div class="flex items-center">
+                        <input type="number" id="weight" value="2.92" step="0.01" class="input-field" oninput="calculate()">
+                    </div>
+                </div>
+
+                <!-- 生理阶段 (定制化) -->
+                <div class="input-group">
+                    <label class="input-label">当前成长阶段</label>
+                    <select id="factor" class="input-field" onchange="calculate()">
+                        <option value="1.6" selected>🔵 5-6月龄 (术前冲刺期) - 骨架强壮 [系数 1.6]</option>
+                        <option value="2.0">🟢 术后恢复期 (手术后1-2周) - 高能修复 [系数 2.0]</option>
+                        <option value="1.2">🟠 6-12月龄 (绝育后少年期) - 严控体重 [系数 1.2]</option>
+                        <option value="1.4">🏃‍♀️ 6-12月龄 (若极其好动) - 适当放宽 [系数 1.4]</option>
+                        <option value="1.2">🟣 1岁+ (成年维持期) - 标准状态 [系数 1.2]</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1" id="factorDesc">当前说明：这是伊拉目前的状态，即便不绝育，生长速度也开始放缓，需适度控制。</p>
+                </div>
+
+                <!-- BCS 体况评分 -->
+                <div class="input-group">
+                    <label class="input-label">BCS 体况评分 (摸肋骨手感)</label>
+                    <select id="bcs" class="input-field" onchange="calculate()">
+                        <option value="1.1">⚠️ 偏瘦 (肋骨明显，像握拳的指关节) -> 加餐 10%</option>
+                        <option value="1.0" selected>✅ 完美 (肋骨可触及，像手背) -> 维持现状</option>
+                        <option value="0.9">⛔ 微胖 (肋骨难摸到，像手掌心) -> 减量 10%</option>
+                        <option value="0.8">❌ 肥胖 (完全摸不到肋骨) -> 减量 20%</option>
+                    </select>
+                </div>
+
+            </div>
+            <div class="text-sm text-gray-500 mt-2 bg-gray-50 p-2 rounded flex justify-between items-center">
+                <span>每日目标热量 (DER):</span> 
+                <span class="text-blue-600 font-bold text-lg"><span id="derDisplay">--</span> kcal</span>
+            </div>
+        </div>
+
+        <!-- 2. 食物参数 -->
+        <div class="card">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">2. 今天吃什么？</h2>
+            
+            <!-- 干粮参数 -->
+            <div class="mb-4">
+                <h3 class="font-bold text-gray-700 mb-2 flex items-center">
+                    🥣 干粮 (主食)
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="input-group">
+                        <label class="input-label">热量密度 (kcal/kg)</label>
+                        <input type="number" id="dryCalorie" value="4100" class="input-field" oninput="calculate()">
+                        <p class="text-xs text-gray-400 mt-1">领先烘焙≈4100 | 爱肯拿≈3900 | 皇家K36≈4000</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 湿粮参数 -->
+            <div>
+                <h3 class="font-bold text-gray-700 mb-2 flex items-center">
+                    🥫 湿粮/罐头 (辅食)
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="input-group">
+                        <label class="input-label">湿粮热量密度 (kcal/100g)</label>
+                        <input type="number" id="wetCalorie" value="92" class="input-field" oninput="calculate()">
+                        <p class="text-xs text-gray-400 mt-1">皇家慕斯≈92 | 鸡肉丝汤罐≈50-70</p>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">今天喂多少湿粮? (g)</label>
+                        <input type="number" id="wetAmount" value="40" class="input-field" oninput="calculate()">
+                        <p class="text-xs text-gray-400 mt-1">半包=40g | 一包=85g</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 计算结果 -->
+        <div class="card bg-blue-50 border border-blue-100">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">📊 今日喂食方案</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <!-- 湿粮展示 -->
+                <div class="text-center p-4 bg-white rounded-lg shadow-sm">
+                    <div class="text-gray-500 font-bold mb-1">先喂湿粮</div>
+                    <span id="wetResult" class="text-2xl font-bold text-pink-500">40</span>
+                    <span class="text-gray-600">克</span>
+                    <div class="text-xs text-gray-400 mt-1">提供 <span id="wetKcalResult">--</span> kcal</div>
+                </div>
+
+                <!-- 干粮结果 -->
+                <div class="result-box bg-white shadow-md transform scale-105 transition-transform">
+                    <div class="text-blue-800 font-bold mb-1">再补干粮</div>
+                    <span id="dryResult" class="highlight-num text-4xl">--</span>
+                    <span class="text-blue-600 font-bold">克</span>
+                    <div class="text-xs text-blue-400 mt-1">提供 <span id="dryKcalResult">--</span> kcal</div>
+                </div>
+            </div>
+
+            <!-- 进度条 -->
+            <div class="mt-6">
+                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>热量来源分布：</span>
+                    <span id="percentText">湿粮 0% / 干粮 0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
+                    <div id="progressBar" class="bg-gradient-to-r from-pink-400 to-blue-500 h-4" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div id="tipBox" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800 hidden">
+                <!-- 动态提示语 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculate() {
+            // 1. 获取输入值
+            const weight = parseFloat(document.getElementById('weight').value) || 0;
+            const factor = parseFloat(document.getElementById('factor').value);
+            const bcsModifier = parseFloat(document.getElementById('bcs').value);
+            
+            const dryCalorieDensity = parseFloat(document.getElementById('dryCalorie').value) || 0; // kcal/kg
+            const wetCalorieDensity = parseFloat(document.getElementById('wetCalorie').value) || 0; // kcal/100g
+            const wetAmount = parseFloat(document.getElementById('wetAmount').value) || 0; // g
+
+            // 2. 更新阶段说明文字
+            updateFactorDescription(factor);
+
+            // 3. 计算 RER
+            // RER = 70 * (体重 ^ 0.75)
+            const rer = 70 * Math.pow(weight, 0.75);
+
+            // 4. 计算 DER (基础需求 * BCS修正)
+            // 公式：RER * 生理系数 * 体况修正系数
+            const der = rer * factor * bcsModifier;
+
+            // 更新 DER 显示
+            document.getElementById('derDisplay').innerText = Math.round(der);
+
+            // 5. 计算湿粮热量
+            const wetCalories = wetAmount * (wetCalorieDensity / 100);
+
+            // 6. 计算剩余干粮热量
+            let dryCaloriesNeeded = der - wetCalories;
+            if (dryCaloriesNeeded < 0) dryCaloriesNeeded = 0;
+
+            // 7. 计算干粮克数
+            const dryAmount = dryCaloriesNeeded / (dryCalorieDensity / 1000);
+
+            // 8. 更新 UI
+            document.getElementById('wetResult').innerText = wetAmount;
+            document.getElementById('wetKcalResult').innerText = Math.round(wetCalories);
+            
+            document.getElementById('dryResult').innerText = Math.round(dryAmount);
+            document.getElementById('dryKcalResult').innerText = Math.round(dryCaloriesNeeded);
+
+            // 9. 更新进度条
+            const totalCalories = wetCalories + dryCaloriesNeeded;
+            let wetPercent = 0;
+            if (totalCalories > 0) {
+                wetPercent = (wetCalories / totalCalories) * 100;
+            }
+            if (wetPercent > 100) wetPercent = 100;
+
+            document.getElementById('progressBar').style.width = wetPercent + '%';
+            document.getElementById('percentText').innerText = `湿粮 ${Math.round(wetPercent)}% / 干粮 ${Math.round(100 - wetPercent)}%`;
+
+            // 10. 动态提示
+            updateTips(bcsModifier, factor);
+        }
+
+        function updateFactorDescription(factor) {
+            const descEl = document.getElementById('factorDesc');
+            let text = "";
+            if (factor === 1.6) text = "💡 适合当前：伊拉体格强壮，不需要过度喂食，为绝育控制体重打基础。";
+            else if (factor === 2.0) text = "💪 术后特供：伤口愈合需要大量能量，这周让她吃饱！";
+            else if (factor === 1.2) text = "⚖️ 警戒线：绝育后代谢降低，这是防止发胖的关键系数。";
+            else if (factor === 1.4) text = "🏃 活跃期：如果她每天跑酷超过1小时，可以用这个系数。";
+            descEl.innerText = text;
+        }
+
+        function updateTips(bcs, factor) {
+            const tipBox = document.getElementById('tipBox');
+            let tips = [];
+
+            if (bcs < 1.0) {
+                tips.push("⚠️ 注意：您选择了【微胖/肥胖】，计算器已自动减少热量。请增加运动量！");
+                tipBox.classList.remove('hidden');
+            } else if (bcs > 1.0) {
+                tips.push("🍗 注意：您选择了【偏瘦】，计算器已自动增加热量。多给点好吃的！");
+                tipBox.classList.remove('hidden');
+            } else {
+                tipBox.classList.add('hidden');
+            }
+            
+            tipBox.innerText = tips.join("\n");
+        }
+
+        // 初始化
+        calculate();
+    </script>
+</body>
+</html>
