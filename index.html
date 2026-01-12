@@ -6,341 +6,498 @@
     <title>伊拉喂饭计算器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 基础设置：防抖动，大字体 */
+        /* 基础设置 */
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
-            font-size: 18px; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            font-size: 17px; 
             line-height: 1.5;
-            padding-bottom: 180px; /* 给底部悬浮栏留位置 */
+            padding-bottom: 220px; 
             background-color: #f3f4f6;
+            -webkit-font-smoothing: antialiased;
+            /* 全局禁止长按选中，提升APP感 */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
-        /* 大按钮基础样式 */
+        /* 字体层级 */
+        .text-level-1 { font-size: 2.5rem; font-weight: 900; line-height: 1; }
+        .text-level-2 { font-size: 1.1rem; font-weight: 700; }
+        .text-level-3 { font-size: 0.9rem; color: #6B7280; font-weight: 500; }
+
+        /* 卡片 */
+        .card {
+            background-color: white; 
+            border-radius: 1.25rem; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02); 
+            padding: 1.5rem; 
+            margin-bottom: 1.25rem; 
+            border: 1px solid #F3F4F6;
+        }
+
+        /* 状态卡片特别样式 */
+        .info-card {
+            background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+            border: 1px solid #BFDBFE;
+            color: #1E40AF;
+            text-align: center; 
+        }
+
+        /* 大按钮 (修复光标问题核心：select-none) */
         .btn-option {
             width: 100%;
             padding: 1rem 0.5rem;
             border: 2px solid #E5E7EB;
             background-color: #fff;
-            border-radius: 0.75rem;
+            border-radius: 1rem;
             font-weight: bold;
             color: #374151;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 80px; /* 保证高度足够好点 */
+            min-height: 85px;
+            /* 关键修复：禁止选中和聚焦轮廓 */
+            user-select: none; 
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
         }
         
-        /* 选中状态 - 蓝色 */
+        .btn-option:focus { outline: none; } /* 再次确保无边框 */
+        .btn-option:active { transform: scale(0.96); } /* 点击回弹效果 */
+
         .btn-option.selected {
-            background-color: #EFF6FF;
-            border-color: #2563EB;
-            color: #1D4ED8;
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+            background-color: #EFF6FF; border-color: #2563EB; color: #1D4ED8;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
         }
-
-        /* 选中状态 - 粉色 (给湿粮用) */
         .btn-option.selected-pink {
-            background-color: #FDF2F8;
-            border-color: #DB2777;
-            color: #BE185D;
-            box-shadow: 0 0 0 2px rgba(219, 39, 119, 0.3);
+            background-color: #FDF2F8; border-color: #DB2777; color: #BE185D;
+            box-shadow: 0 4px 12px rgba(219, 39, 119, 0.15);
         }
 
-        /* 底部悬浮栏 */
+        /* 底部悬浮栏 (回归深色样式 & 收窄高度) */
         .fixed-bottom {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(to bottom, #1E40AF, #1e3a8a);
+            bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to bottom, #1E40AF, #1e3a8a); /* 深蓝渐变 */
             color: white;
-            padding: 1.25rem;
-            box-shadow: 0 -4px 10px rgba(0,0,0,0.15);
+            padding: 1rem 1.5rem; /* 收窄上下内边距 */
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            box-shadow: 0 -4px 20px rgba(30, 64, 175, 0.25); /* 调整阴影颜色 */
             z-index: 50;
             border-top-left-radius: 1.5rem;
             border-top-right-radius: 1.5rem;
         }
 
-        /* 加减按钮 - 修复居中问题 */
+        /* 加减按钮 */
         .stepper-btn {
-            width: 3.5rem;
-            height: 3.5rem;
+            width: 3.5rem; height: 3.5rem;
             border-radius: 50%;
             background-color: white;
-            border: 2px solid #D1D5DB;
-            /* 移除 font-size，改用 flex 居中 SVG */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #4B5563;
-            touch-action: manipulation; /* 防止双击缩放 */
-            padding: 0; /* 移除默认内边距 */
+            border: 2px solid #E5E7EB;
+            display: flex; align-items: center; justify-content: center;
+            color: #4B5563; touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
-        .stepper-btn:active {
-            background-color: #E5E7EB;
-            transform: scale(0.95);
-        }
-        /* SVG 图标样式 */
-        .stepper-icon {
-            width: 1.75rem;
-            height: 1.75rem;
-            stroke-width: 3;
-        }
+        .stepper-btn:active { background-color: #F3F4F6; transform: scale(0.92); }
+        .stepper-icon { width: 1.5rem; height: 1.5rem; stroke-width: 2.5; }
 
-        /* 分区标题 */
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: #111827;
-            margin-bottom: 0.75rem;
-            display: flex;
-            align-items: center;
-        }
-        .section-icon {
-            background-color: #DBEAFE;
-            color: #1E40AF;
-            width: 2rem;
-            height: 2rem;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 0.5rem;
-            font-size: 1rem;
-            line-height: 1; /* 修复数字垂直居中 */
-            padding-top: 2px; /* 微调数字视觉中心 */
+        /* 下拉框 */
+        select.big-select {
+            width: 100%; height: 3.5rem;
+            font-size: 1.1rem; padding: 0 1rem;
+            border-radius: 0.75rem; border: 2px solid #E5E7EB;
+            background-color: white; color: #1F2937;
+            outline: none;
         }
         
-        /* 下拉框大字体优化 */
-        select.big-select {
-            width: 100%;
-            height: 3.5rem;
-            font-size: 1.1rem;
-            padding: 0 1rem;
-            border-radius: 0.75rem;
-            border: 2px solid #9CA3AF;
-            background-color: white;
-            color: #1F2937;
+        /* 标签徽章 */
+        .badge-auto {
+            display: inline-block;
+            background-color: #DEF7EC;
+            color: #03543F;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 99px;
+            font-weight: 700;
+            margin-left: 8px;
+            vertical-align: middle;
         }
     </style>
 </head>
 <body>
 
-    <!-- 顶部简单标题 -->
-    <div class="bg-white p-4 shadow-sm text-center mb-4">
-        <h1 class="text-2xl font-black text-gray-800">🐱 伊拉吃饭计算器</h1>
+    <!-- 顶部 -->
+    <div class="bg-white sticky top-0 z-20 border-b border-gray-100 shadow-sm">
+        <div class="max-w-md mx-auto h-16 flex items-center justify-center relative">
+            <h1 class="text-xl font-black text-gray-800 flex items-center">
+                🐱 伊拉计算器
+                <span class="ml-2 text-xs font-bold bg-pink-100 text-pink-700 px-2 py-1 rounded-full border border-pink-200">专属版</span>
+            </h1>
+        </div>
     </div>
 
-    <div class="max-w-md mx-auto px-4 space-y-6">
+    <div class="max-w-md mx-auto px-4 py-6 space-y-5">
 
-        <!-- 1. 湿粮选择 (最常变动) -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm">
-            <h2 class="section-title">
-                <span class="section-icon">1</span>
-                今天吃多少罐头/湿粮？
+        <!-- 0. 伊拉信息卡 -->
+        <div class="card info-card">
+            <!-- 年龄大字显示 -->
+            <div class="mb-1 text-sm text-blue-500 font-bold uppercase tracking-wider opacity-70">CURRENT AGE</div>
+            <h2 class="text-3xl font-black text-blue-900 mb-3" id="ageDetail">计算中...</h2>
+            
+            <!-- 阶段标签 -->
+            <div>
+                <span id="statusBadge" class="bg-white text-blue-600 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm border border-blue-100 inline-block">--</span>
+            </div>
+
+            <!-- 术后提示 (仅在恢复期显示) -->
+            <div class="mt-4 text-sm bg-white/60 p-3 rounded-xl text-left border border-blue-100 text-blue-800" id="recoveryTips" style="display: none;">
+                🚑 <strong>术后恢复期：</strong> 刚做完绝育手术，系数已自动调整为 2.0，多吃肉肉补身体！
+            </div>
+        </div>
+
+        <!-- 1. 体重输入 -->
+        <div class="card">
+            <h2 class="text-level-2 text-gray-800 mb-4 flex items-center">
+                <span class="bg-gray-100 text-gray-600 w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">1</span>
+                本周体重 (kg)
+            </h2>
+            
+            <div class="flex items-center justify-between px-2 py-2 bg-gray-50 rounded-2xl mb-3">
+                <button class="stepper-btn" onclick="changeWeight(-0.05)">
+                    <svg class="stepper-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+                <div class="text-center flex-1">
+                    <span id="weightDisplay" class="text-level-1 text-gray-800 tracking-tight">3.00</span>
+                </div>
+                <button class="stepper-btn" onclick="changeWeight(0.05)">
+                    <svg class="stepper-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+            </div>
+            <input type="hidden" id="weight" value="3.00">
+
+            <!-- 智能分析提示 -->
+            <div id="weightGuide" class="bg-orange-50 p-3 rounded-lg text-sm text-orange-800 font-medium border border-orange-100 flex items-start">
+                <span class="text-lg mr-2">⚖️</span>
+                <span id="weightGuideText">正在分析体型...</span>
+            </div>
+        </div>
+
+        <!-- 2. 状态微调 -->
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-level-2 text-gray-800 flex items-center">
+                    <span class="bg-gray-100 text-gray-600 w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">2</span>
+                    系数设置
+                </h2>
+                <span id="autoTag" class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded font-bold">已自动匹配</span>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- 自动选中的系数 -->
+                <select id="factor" class="big-select" onchange="manualFactorChange()">
+                    <option value="1.6">🔵 幼猫期 (4-6月 长身体)</option>
+                    <option value="1.3">🟣 尴尬期/亚成体 (7-12月)</option>
+                    <option value="1.2">🟠 成年/绝育 (1岁+ 维持)</option>
+                    <option value="2.0">🟢 术后恢复 (刚做完手术)</option>
+                    <option value="1.4">🏃‍♀️ 运动量巨大 (跑酷)</option>
+                </select>
+
+                <!-- 体况评分 -->
+                <div class="pt-3 border-t border-gray-100">
+                    <label class="text-sm text-gray-500 font-bold mb-2 block">现在看着胖吗？(摸肋骨)</label>
+                    <select id="bcs" class="big-select" onchange="calculate()">
+                        <option value="1.0" selected>✅ 完美 (稍微用力摸到骨头)</option>
+                        <option value="1.1">⚠️ 偏瘦 (骨头明显/有腰身)</option>
+                        <option value="0.9">⛔ 微胖 (摸不到骨头/没腰)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 湿粮设置 -->
+        <div class="card">
+            <h2 class="text-level-2 text-gray-800 mb-4 flex items-center">
+                <span class="bg-gray-100 text-gray-600 w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">3</span>
+                今天湿粮吃多少?
             </h2>
             <div class="grid grid-cols-3 gap-3">
                 <button type="button" class="btn-option selected-pink" onclick="setWet(0, this)">
                     <span class="text-xl">不吃</span>
-                    <span class="text-xs font-normal text-gray-500 mt-1">0克</span>
+                    <span class="text-xs text-gray-400 mt-1">0g</span>
                 </button>
                 <button type="button" class="btn-option" onclick="setWet(40, this)">
                     <span class="text-xl">半包</span>
-                    <span class="text-xs font-normal text-gray-500 mt-1">40克</span>
+                    <span class="text-xs text-gray-400 mt-1">40g</span>
                 </button>
                 <button type="button" class="btn-option" onclick="setWet(85, this)">
                     <span class="text-xl">一包</span>
-                    <span class="text-xs font-normal text-gray-500 mt-1">85克</span>
+                    <span class="text-xs text-gray-400 mt-1">85g</span>
                 </button>
             </div>
-            <!-- 隐藏的数值输入，用于计算 -->
             <input type="hidden" id="wetAmount" value="0">
         </div>
 
-        <!-- 2. 体重调整 (常用) -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm">
-            <h2 class="section-title">
-                <span class="section-icon">2</span>
-                现在多重？(公斤)
-            </h2>
-            <div class="flex items-center justify-between px-2 py-2 bg-gray-50 rounded-xl">
-                <!-- 减号按钮：使用 SVG 替代文本符号 -->
-                <button class="stepper-btn" onclick="changeWeight(-0.1)" aria-label="减少体重">
-                    <svg class="stepper-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                </button>
-                
-                <!-- 中间数值区域：flex-1 确保占据所有剩余空间，严格居中 -->
-                <div class="text-center flex-1">
-                    <span id="weightDisplay" class="text-4xl font-black text-gray-800">2.9</span>
-                    <span class="text-gray-500 font-bold">kg</span>
-                </div>
-                
-                <!-- 加号按钮：使用 SVG 替代文本符号 -->
-                <button class="stepper-btn" onclick="changeWeight(0.1)" aria-label="增加体重">
-                    <svg class="stepper-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                </button>
-            </div>
-            <!-- 隐藏的实际数值 -->
-            <input type="hidden" id="weight" value="2.92">
-        </div>
-
-        <!-- 3. 基础设置 (不太常动) -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm">
-            <h2 class="section-title">
-                <span class="section-icon">3</span>
-                基础设置
-            </h2>
-
-            <!-- 成长阶段 -->
-            <div class="mb-4">
-                <label class="block text-gray-600 font-bold mb-2">现在的阶段？</label>
-                <select id="factor" class="big-select" onchange="calculate()">
-                    <option value="1.2">🟠 成年/绝育 (维持体重)</option>
-                    <option value="1.6" selected>🔵 5-6月龄 (正在长身体)</option>
-                    <option value="2.0">🟢 术后恢复 (多吃点)</option>
-                    <option value="1.4">🏃‍♀️ 特别好动 (跑酷)</option>
-                </select>
-            </div>
-            
-            <!-- 体况 -->
-            <div class="mb-4">
-                <label class="block text-gray-600 font-bold mb-2">伊拉胖不胖？(摸肋骨)</label>
-                <select id="bcs" class="big-select" onchange="calculate()">
-                    <option value="1.0" selected>✅ 完美 (摸得到骨头)</option>
-                    <option value="1.1">⚠️ 偏瘦 (骨头太明显)</option>
-                    <option value="0.9">⛔ 微胖 (肉有点多)</option>
-                </select>
-            </div>
-
-            <!-- 干粮热量 -->
-            <div class="mb-2">
-                <label class="block text-gray-600 font-bold mb-2">吃的哪种干粮？</label>
-                <select id="dryCalorie" class="big-select" onchange="calculate()">
-                    <option value="4200" selected>🔥 烘焙粮/高营养 (420kcal)</option>
-                    <option value="3900">🍚 普通膨化粮 (390kcal)</option>
-                    <option value="3500">🥗 减肥粮/低热量</option>
-                </select>
-                <p class="text-xs text-gray-400 mt-2 text-center">如果不确定，就保持默认“烘焙粮”</p>
-            </div>
-        </div>
-
-        <!-- 提示信息 -->
-        <div id="tipBox" class="bg-yellow-100 text-yellow-900 p-3 rounded-lg text-sm font-bold hidden">
-            <!-- 动态提示 -->
+        <!-- 4. 干粮类型 -->
+        <div class="text-center mb-8">
+             <select id="dryCalorie" class="bg-transparent text-gray-400 text-sm border-b border-gray-300 pb-1 outline-none" onchange="calculate()">
+                <option value="4200" selected>🔥 使用烘焙粮 (420kcal/100g)</option>
+                <option value="3900">🍚 使用膨化粮 (390kcal/100g)</option>
+                <option value="3500">🥗 使用减肥粮 (350kcal/100g)</option>
+            </select>
         </div>
 
     </div>
 
-    <!-- 始终悬浮的底部结果 -->
+    <!-- 底部结果 (回归深色样式) -->
     <div class="fixed-bottom">
         <div class="max-w-md mx-auto flex items-center justify-between">
-            <div class="flex flex-col">
-                <span class="text-blue-200 text-sm font-bold mb-1">
-                    湿粮吃 <span id="wetResultSticky" class="text-white bg-pink-500 px-1 rounded">0</span> g
+            <div class="flex flex-col text-blue-100">
+                <span class="text-xs font-bold mb-1 opacity-90">
+                    湿粮 <span id="wetResultSticky" class="text-white bg-pink-500 px-1 rounded mx-0.5">0</span>g +
                 </span>
-                <span class="text-white text-lg font-bold">还需喂干粮:</span>
+                <span class="text-white text-lg font-bold">干粮还需喂:</span>
             </div>
-            <div class="flex items-baseline">
-                <span id="dryResultSticky" class="text-6xl font-black text-yellow-300 leading-none">--</span>
-                <span class="ml-1 text-xl font-bold text-yellow-100">克</span>
+            <div class="flex items-baseline text-white">
+                <span id="dryResultSticky" class="text-6xl font-black text-yellow-300 leading-none" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">--</span>
+                <span class="ml-1 text-xl font-bold text-blue-200">克</span>
             </div>
         </div>
     </div>
 
     <script>
-        // 预设参数
-        // 湿粮默认热量更新为 74 kcal/100g
-        const WET_CALORIE_DENSITY = 74; 
+        // === 核心数据 (伊拉专属配置) ===
+        // 直接使用数字，避免 new Date(string) 的时区问题
+        const YILA_DATA = {
+            birthYear: 2025,
+            birthMonth: 7, // 1-12
+            birthDay: 31,
+            neuterYear: 2026,
+            neuterMonth: 1,
+            neuterDay: 10,
+            wetCalorie: 74 // kcal/100g
+        };
 
+        // === 状态变量 ===
+        let currentAgeMonths = 0;
+        let daysSinceNeuter = 0;
+
+        // 初始化
+        window.onload = function() {
+            const savedWeight = localStorage.getItem('yila_last_weight');
+            if (savedWeight) {
+                document.getElementById('weight').value = savedWeight;
+                document.getElementById('weightDisplay').innerText = savedWeight;
+            }
+
+            initYilaStatus();
+            calculate();
+        };
+
+        // 初始化状态逻辑 (使用安全日期计算)
+        function initYilaStatus() {
+            const today = new Date();
+            // 创建本地时间的日期对象 (月份需要-1，因为JS月份是0-11)
+            const birthDate = new Date(YILA_DATA.birthYear, YILA_DATA.birthMonth - 1, YILA_DATA.birthDay);
+            const neuterDate = new Date(YILA_DATA.neuterYear, YILA_DATA.neuterMonth - 1, YILA_DATA.neuterDay);
+
+            // 1. 计算精准年龄
+            let years = today.getFullYear() - birthDate.getFullYear();
+            let months = today.getMonth() - birthDate.getMonth();
+            let days = today.getDate() - birthDate.getDate();
+
+            if (days < 0) {
+                months--;
+                // 获取上个月有多少天
+                const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                days += prevMonth.getDate();
+            }
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+            
+            const weeks = Math.round(days / 7);
+
+            // 全局月龄
+            currentAgeMonths = years * 12 + months;
+            
+            // 绝育天数
+            const diffTime = today - neuterDate;
+            daysSinceNeuter = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            // 2. 更新显示文本
+            let ageText = "";
+            if (years > 0) {
+                ageText = `${years}岁 ${months}个月`;
+            } else {
+                ageText = `${months}个月 ${weeks}周`;
+            }
+            document.getElementById('ageDetail').innerText = ageText;
+
+            // 3. 初始系数判定 (含体重联动)
+            const currentWeight = parseFloat(document.getElementById('weight').value);
+            smartUpdateFactor(currentAgeMonths, daysSinceNeuter, currentWeight);
+        }
+
+        // 智能系数与状态更新 (核心逻辑)
+        function smartUpdateFactor(months, neuterDays, weight) {
+            const factorSelect = document.getElementById('factor');
+            const statusBadge = document.getElementById('statusBadge');
+            const recoveryTips = document.getElementById('recoveryTips');
+            const autoTag = document.getElementById('autoTag');
+
+            // 恢复自动匹配标签
+            autoTag.classList.remove('hidden');
+
+            // 优先判断：术后恢复期 (绝育后 14 天内)
+            if (neuterDays >= 0 && neuterDays <= 14) {
+                factorSelect.value = "2.0"; 
+                statusBadge.innerText = "🚑 术后恢复期";
+                statusBadge.className = "bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm inline-block";
+                recoveryTips.style.display = 'block'; 
+                return; // 术后恢复期不因体重调整系数
+            } 
+            
+            // 正常成长逻辑
+            recoveryTips.style.display = 'none';
+            statusBadge.className = "bg-white text-blue-600 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm border border-blue-100 inline-block";
+            
+            if (months < 4) {
+                factorSelect.value = "2.0"; 
+                statusBadge.innerText = "🍼 幼猫期";
+            } else if (months >= 4 && months < 7) {
+                // 猛长期逻辑：如果太胖(>3.5kg)，降级为1.4
+                if (weight > 3.5) {
+                    factorSelect.value = "1.4";
+                    statusBadge.innerText = "📈 猛长期 (偏胖控制)";
+                } else {
+                    factorSelect.value = "1.6";
+                    statusBadge.innerText = "📈 快速生长期";
+                }
+            } else if (months >= 7 && months < 12) {
+                // 尴尬期逻辑：如果太胖(>4.0kg)，降级为1.2
+                if (weight > 4.0) {
+                    factorSelect.value = "1.2";
+                    statusBadge.innerText = "🌱 亚成体 (体重控制)";
+                } else {
+                    factorSelect.value = "1.3";
+                    statusBadge.innerText = "🌱 亚成体/尴尬期";
+                }
+            } else {
+                factorSelect.value = "1.2"; 
+                statusBadge.innerText = "👑 成年期";
+            }
+        }
+
+        // 手动修改系数
+        function manualFactorChange() {
+            document.getElementById('autoTag').classList.add('hidden');
+            calculate();
+        }
+
+        // 调整体重
+        function changeWeight(delta) {
+            const weightInput = document.getElementById('weight');
+            let currentWeight = parseFloat(weightInput.value);
+            let newWeight = currentWeight + delta;
+            if (newWeight < 0.1) newWeight = 0.1;
+            
+            newWeight = parseFloat(newWeight.toFixed(2));
+            weightInput.value = newWeight;
+            document.getElementById('weightDisplay').innerText = newWeight.toFixed(2);
+            
+            localStorage.setItem('yila_last_weight', newWeight);
+            
+            // 体重变化触发系数重新评估
+            smartUpdateFactor(currentAgeMonths, daysSinceNeuter, newWeight);
+            
+            calculate();
+        }
+
+        // 湿粮选择
         function setWet(amount, btn) {
-            // 1. 设置数值
             document.getElementById('wetAmount').value = amount;
             
-            // 2. 切换按钮样式
-            // 先清除所有粉色选中态
             const btns = document.querySelectorAll('.btn-option');
             btns.forEach(b => {
                 b.classList.remove('selected-pink');
                 b.classList.remove('border-pink-500');
             });
-            // 给当前点击的按钮加上
             btn.classList.add('selected-pink');
             
-            // 3. 重新计算
             calculate();
         }
 
-        function changeWeight(delta) {
-            const weightInput = document.getElementById('weight');
-            let currentWeight = parseFloat(weightInput.value);
-            
-            // 计算新体重，保留2位小数
-            let newWeight = currentWeight + delta;
-            if (newWeight < 0.1) newWeight = 0.1; // 防止负数
-            
-            // 更新隐藏值
-            weightInput.value = newWeight.toFixed(2);
-            
-            // 更新显示值 (保留1位小数显示给长辈看即可，更清爽)
-            document.getElementById('weightDisplay').innerText = newWeight.toFixed(1);
-            
-            calculate();
-        }
-
+        // 核心计算
         function calculate() {
-            // 获取数值
             const weight = parseFloat(document.getElementById('weight').value);
-            const factor = parseFloat(document.getElementById('factor').value); 
+            const factor = parseFloat(document.getElementById('factor').value);
             const bcsModifier = parseFloat(document.getElementById('bcs').value);
             const dryCalorieDensity = parseFloat(document.getElementById('dryCalorie').value);
             const wetAmount = parseFloat(document.getElementById('wetAmount').value);
 
+            // 智能分析提示
+            updateSmartAnalysis(currentAgeMonths, weight, bcsModifier);
+
             // RER = 70 * (体重 ^ 0.75)
             const rer = 70 * Math.pow(weight, 0.75);
 
-            // DER = RER * 系数 * 体况
+            // DER
             const der = rer * factor * bcsModifier;
 
             // 湿粮热量
-            const wetCalories = wetAmount * (WET_CALORIE_DENSITY / 100);
+            const wetCalories = wetAmount * (YILA_DATA.wetCalorie / 100);
 
-            // 剩余干粮热量
+            // 剩余干粮
             let dryCaloriesNeeded = der - wetCalories;
             if (dryCaloriesNeeded < 0) dryCaloriesNeeded = 0;
 
-            // 干粮克数 = 热量 / (热量密度/1000)
             const dryAmount = dryCaloriesNeeded / (dryCalorieDensity / 1000);
 
-            // 更新 UI
+            // 更新UI
             document.getElementById('wetResultSticky').innerText = wetAmount;
             document.getElementById('dryResultSticky').innerText = Math.round(dryAmount);
-
-            // 提示逻辑
-            updateTips(bcsModifier);
         }
 
-        function updateTips(bcs) {
-            const tipBox = document.getElementById('tipBox');
-            if (bcs < 1.0) {
-                tipBox.innerText = "💡 因为选了【微胖】，已自动减少一点饭量。";
-                tipBox.classList.remove('hidden');
-            } else if (bcs > 1.0) {
-                tipBox.innerText = "🍖 因为选了【偏瘦】，已自动加了点饭量。";
-                tipBox.classList.remove('hidden');
+        function updateSmartAnalysis(months, weight, bcs) {
+            const guideText = document.getElementById('weightGuideText');
+            let msg = "";
+            let status = ""; 
+
+            // 美短母猫大概生长标准
+            if (months >= 4 && months <= 6) {
+                if (weight < 2.0) status = "轻";
+                else if (weight > 3.2) status = "重";
+                else status = "正常";
+                msg = `${months}个月还在长个子，`;
+            } else if (months >= 7 && months < 12) {
+                if (weight < 2.6) status = "轻";
+                else if (weight > 4.0) status = "重";
+                else status = "正常";
+                msg = `${months}个月进入尴尬期，`;
+            } else if (months >= 12) {
+                if (weight < 3.2) status = "轻";
+                else if (weight > 5.2) status = "重";
+                else status = "正常";
+                msg = `${months}个月已成年，`;
             } else {
-                tipBox.classList.add('hidden');
+                msg = "小宝宝阶段，";
+                status = "正常";
             }
-        }
 
-        // 初始化运行一次
-        calculate();
+            if (bcs < 1.0) msg += "既然微胖就少吃点。";
+            else if (bcs > 1.0) msg += "觉得瘦就多补点。";
+            else {
+                if (status === "轻") msg += "体重略轻，多吃一口没事的。";
+                else if (status === "重") msg += "美短容易胖，注意保持哦。";
+                else msg += "体重非常标准，继续保持！👏";
+            }
+
+            guideText.innerText = msg;
+        }
     </script>
 </body>
 </html>
