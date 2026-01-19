@@ -351,8 +351,8 @@
             // 恢复自动匹配标签
             autoTag.classList.remove('hidden');
 
-            // 优先判断：术后恢复期 (绝育后 14 天内)
-            if (neuterDays >= 0 && neuterDays <= 14) {
+            // 优先判断：术后恢复期 (绝育后 8 天内)
+            if (neuterDays >= 0 && neuterDays <= 8) {
                 factorSelect.value = "2.0"; 
                 statusBadge.innerText = "🚑 术后恢复期";
                 statusBadge.className = "bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm inline-block";
